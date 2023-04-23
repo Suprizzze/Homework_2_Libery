@@ -273,6 +273,14 @@ book1.list_book.append(book1_ekz2 := BookCopy(book1, 4))
 book2.list_book.append(book2_ekz1 := BookCopy(book2, 9))
 book2.list_book.append(book2_ekz2 := BookCopy(book2, 7))
 
+#  показывает что студент взял книгу и дату и id студента
+stud1.take_book(book1_ekz1, (2023, 4, 25))
+
+#  stud1.back_book(book1_ekz1) так можно вернуть книгу
+#  если вернуть книгу позже чем 14 дней то порядочность студента станет = 0 и студент не сможет больше взять книг
+print(stud1)
+print(book1)
+print()
 
 #  добавляем в список Библиотеки
 Library.enter_book(book1.full_status, book2.full_status)
@@ -284,6 +292,7 @@ Library.find_all_free_books_copy()
 
 # ищем студента по имени и приносит все данные про него
 Library.search_student("Gegham")
+
 
 print()
 print(Library.books_list)
