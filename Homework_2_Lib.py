@@ -81,12 +81,9 @@ class Students:  # класс студент - может брать книгу,
                 self._stud_stat = 0
                 return f"Студент опоздал с книгой на {late} дней, порядочность студента = 0"
 
-    @property
-    def full_status(self):
-        return f"{self.name} {self.surname}, id = {self.stud_id}, {self._email}, лимит книг = {self._count_limit}/{self._limit} Статус порядочности = {self.stud_stat},"
-
     def __str__(self):
-        return f"{self.name} {self.surname}, id = {self.stud_id}, {self.stud_stat}, {self._email}, лимит книг = {self._count_limit}/{self._limit} Статус порядочности = {self.stud_stat}, "
+        return f"{self.name} {self.surname}, id = {self.stud_id}, {self.stud_stat}, {self._email}, " \
+               f"лимит книг = {self._count_limit}/{self._limit} Статус порядочности = {self.stud_stat}"
 
     @property
     def name(self):
@@ -149,27 +146,22 @@ class BookCopy:  # класс копии книг - создает копию н
         self.state = Verify.verify_int(state)
         self.status = status
 
-    @property
-    def full_status(self):
-        return f"{self.book_title}, id копии = {self.copy_id}, состояние = {self.state}, статус = {self.status}"
+    def __str__(self):
+        return f"{self.book_title}, Состояние книги = {self.state}, id = {self.copy_id}, {self.status}"
 
 
 class Book:  # класс Книги - создает книгу и хранит в себя копии этой книги
 
     doc = "Здесь нужно указать саму книгу (название, авторов, год выпуска, ISBN, Жанр)"
 
-    def __init__(self, title: str, authors: str, year: int, isbn: str, genre: str):
+    def __init__(self, title: str, authors: tuple, year: int, isbn: str, genre: str):
         self._id_book = Verify.rand_id()
         self._title = Verify.verify_str(title)
-        self._authors = Verify.verify_str(authors)
+        self._authors = list(authors)
         self._year = Verify.verify_isdigit(year)
         self._ISBN = Verify.verify_str(isbn)
         self.genre = Verify.verify_str(genre)
         self.list_book = []
-
-    @property
-    def full_status(self):
-        return f"{self.title},{self.authors},{self.year},{self.isbn},{self.genre}"
 
     @property
     def id_book(self):
@@ -193,7 +185,7 @@ class Book:  # класс Книги - создает книгу и хранит
 
     def __str__(self):
         return f"{self.title}, {self.authors}, {self.year}, {self.isbn}, {self.genre}," \
-               f" Копии этой книги - {[[i.full_status] for i in self.list_book]}"
+               f" Копии этой книги - {[[i] for i in self.list_book]}"
 
 
 class Library:  # класс библиотека - хранит в себя книги, копию книг, студентов - можно сделать поиск в нужных списках
@@ -208,60 +200,60 @@ class Library:  # класс библиотека - хранит в себя к�
 
     @classmethod
     def enter_studs(cls, *args):  # добавляет студентов в библиотеку
-        cls.student_list += list([[i] for i in args])
+        cls.student_list += list(args)
 
     @classmethod
     def enter_book(cls, *args):  # добавляет книг в библиотеку
-        cls.books_list += list([[i] for i in args])
+        cls.books_list += list(args)
 
     @classmethod
     def enter_book_copy(cls, *args):  # добавляет копию книг в библиотеку
-        cls.book_cop += list([[i] for i in args])
+        cls.book_cop += list([i for i in args])
 
-    @classmethod
-    def search_book(cls, word):  # делает поиск нужного слово в списке книге и возвращает найденные
-        for_search = []
-        for i in cls.books_list:
-            for j in i:
-                if word in j:
-                    for_search += i
-        print(for_search)
+    @classmethod  # поиск в книге, можно указать все аргументы или некоторые
+    def search_stud(cls, name="", surname="", email=""):
+        search_stud_set = set()
+        for i in range(len(cls.student_list)):
+            if name in cls.student_list[i].name and surname in cls.student_list[i].surname and \
+                    email in cls.student_list[i].email:
+                ind = f"Index = {i}, {cls.student_list[i]}"
+                search_stud_set.add(ind)
+        if len(search_stud_set) == 0:
+            search_stud_set.add("Ошибка в поиске")
+        print(*search_stud_set, sep="\n")
 
-    @classmethod
-    def search_copy_book(cls, word):  # делает поиск нужного слово в списке копии книг и возвращает найденные
-        for_search = []
-        for i in cls.book_cop:
-            for j in i:
-                if word in j:
-                    for_search += i
-        print(for_search)
+    @classmethod  # поиск в книге, можно указать все аргументы или некоторые
+    def search_book(cls, title="", authors="", isbn="", genre=""):
+        search_book_set = set()
+        for i in range(len(cls.books_list)):
+            if title in cls.books_list[i].title and authors in cls.books_list[i].authors \
+                    and isbn in cls.books_list[i].isbn and\
+                    genre in cls.books_list[i].genre:
+                ind = f"Index = {i}, {cls.books_list[i]}"
+                search_book_set.add(ind)
+        if len(search_book_set) == 0:
+            search_book_set.add("Ошибка в поиске")
+            print(*search_book_set, sep="\n")
 
-    @classmethod
-    def search_student(cls, word):  # делает поиск нужного слово в списке студентов и возвращает найденные
-        for_search = []
-        for i in cls.student_list:
-            for j in i:
-                if word in j:
-                    for_search += i
-        print(for_search)
-
-    @classmethod
-    def find_all_free_books_copy(cls):  # показывает все доступные копии книг
-        for_search = []
-        for i in cls.book_cop:
-            for j in i:
-                if "Доступен" in j:
-                    for_search += i
-        print(for_search)
+    @classmethod  # поиск в книге, можно указать все аргументы или некоторые
+    def search_book_copy(cls, book_title="", status=""):
+        search_book_copy_set = set()
+        for i in range(len(cls.book_cop)):
+            if book_title in cls.book_cop[i].book_title and status in cls.book_cop[i].status.split():
+                ind = f"Index = {i}, {cls.book_cop[i]}"
+                search_book_copy_set.add(ind)
+        if len(search_book_copy_set) == 0:
+            search_book_copy_set.add("Ошибка в поиске")
+        print(*search_book_copy_set, sep="\n")
 
 
 #  создаем книг
-book1 = Book("Python К вершинам мастерства", "Лучано Рамальо", 2015, "978-5-97060-384-0", "Обучение")
-book2 = Book("Python Чистый код для продолжающих", "Эл Свейгарт", 2021, "978-5-4461-1852-6", "Обучение")
+book1 = Book("Python К вершинам мастерства", ("Лучано Рамальо",), 2015, "978-5-97060-384-0", "Обучение")
+book2 = Book("Python Чистый код для продолжающих", ("Эл Свейгарт",), 2021, "978-5-4461-1852-6", "Обучение")
 
 #  создаем студентов
 stud1 = Students("Vram", "Torosyan", "vram_torosyan@mail.ru")
-stud2 = Students("Gegham", "Petrosyan","Gegham_petrosyan@gmail.com")
+stud2 = Students("Gegham", "Petrosyan", "Gegham_petrosyan@gmail.com")
 
 #  тут поменял у студента 1 лимит на 4
 Library.change_stud_limit(stud1, 4)
@@ -280,25 +272,24 @@ stud1.take_book(book1_ekz1, (2023, 4, 25))
 #  если вернуть книгу позже чем 14 дней то порядочность студента станет = 0 и студент не сможет больше взять книг
 print(stud1)
 print(book1)
+print(book1_ekz1)
+
 print()
 
 #  добавляем в список Библиотеки
-Library.enter_book(book1.full_status, book2.full_status)
-Library.enter_studs(stud1.full_status, stud2.full_status)
-Library.enter_book_copy(book1_ekz1.full_status, book1_ekz2.full_status, book2_ekz1.full_status, book2_ekz2.full_status)
+Library.enter_book(book1, book2)
+Library.enter_studs(stud1, stud2)
+Library.enter_book_copy(book1_ekz1, book1_ekz2, book2_ekz1, book2_ekz2)
 
 # показывает все доступные книги
-Library.find_all_free_books_copy()
+Library.search_book_copy(book_title="Python К вершинам мастерства", status="2023-04-25")
+Library.search_book_copy(book_title="Hello World")  # покажет ошибку в поиске
+Library.search_stud(name="Gegham", surname="Petrosyan")
 
-# ищем студента по имени и приносит все данные про него
-Library.search_student("Gegham")
 
-
+print()
+print(book1.authors)
 print()
 print(Library.books_list)
 print(Library.student_list)
 print(Library.book_cop)
-
-
-
-
