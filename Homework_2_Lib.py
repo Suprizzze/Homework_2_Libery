@@ -1,9 +1,11 @@
-import random
+from dataclasses import dataclass, field
 from datetime import datetime
 from string import ascii_letters, digits
+import random
+from Verify import Verify
 
 
-class Verify:  # Проверяет тип данных и генерирует id
+class IdRandomMIx:  # generates id
     letters = ascii_letters + digits
 
     @classmethod
@@ -15,75 +17,47 @@ class Verify:  # Проверяет тип данных и генерирует 
                 id_r += "-"
         return id_r
 
-    @classmethod
-    def verify_str(cls, inst):
-        if not isinstance(inst, str):
-            raise TypeError("Type должно быть строкой")
-        return inst
 
-    @classmethod
-    def verify_int(cls, inst):
-        if not isinstance(inst, int):
-            raise TypeError("Type должно быть целое число от 0 до 10 Включительно")
-        return inst
-
-    @classmethod
-    def verify_isdigit(cls, inst):
-        if not str(inst).isdigit():
-            raise Exception("Может быть только цифрой в виде строки или целым числом")
-        return inst
-
-
-class Students:  # класс студент - может брать книгу, вернуть книгу
-
-    doc = "здесь нужно указать имя и фамилию студента, порядочность студента от 0 до 10 или по умолчанию будет 10," \
-          " и укажите дату когда студент взял книгу ,пример(0000, 0, 0), " \
-          "take_book вызывается чтобы забрать книгу, 1 аргумент = переменная книги, " \
-          "2 аргумент = дата когда забирает студент книгу"\
-          "back_book вызывается когда студент хочет вернуть книгу, 1 аргумент = переменная книги"
-
-    def __init__(self, name: str, surname: str, email: str, stud_stat=10, limit=5, b_time=None):
-        self._name = Verify.verify_str(name)
-        self._surname = Verify.verify_str(surname)
-        self._email = Verify.verify_str(email)
-        self._stud_id = Verify.rand_id()
-        self.book_c = []
-        self._stud_stat = Verify.verify_int(stud_stat)
-        self._limit = Verify.verify_int(limit)
-        self._count_limit = 0
-        self._b_time = b_time
+@dataclass
+class Students:
+    _name: str
+    _surname: str
+    _email: str
+    _stud_id: str = IdRandomMIx.rand_id()
+    book_c: list = field(default_factory=list, repr=False)
+    _stud_stat: int = 10
+    _count_limit: int = 0
+    _limit: int = 5
+    _b_time: str | datetime = None
 
     def take_book(self, book_copy, date):
         if len(self.book_c) == self._limit:
-            raise Exception("Вы перевесили лимит")
+            raise Exception("exceeded the limit")
         title_name = [j.book_title for j in [i for i in self.book_c]]
         if not isinstance(date, tuple):
-            raise TypeError("Должно быть tuple с датой - пример (0000, 0, 0)")
-        if book_copy.status != "Доступен":
-            raise Exception("Эту книгу уже взял другой студент!")
-        if book_copy.book_title in title_name:
-            raise TypeError("такая книга уже есть у студента")
+            raise TypeError("Should be a tuple with date - example (0000, 0, 0)")
+        if book_copy.status != "Available":
+            raise Exception("Another student has already taken this book!")
+        if book_copy.title in title_name:
+            raise TypeError("the student already has such a book")
         if self.stud_stat == 0:
-            raise Exception("Нельзя забрать книгу, порядочность = 0")
+            raise Exception("Cannot pick up the book, decency = 0")
         self._b_time = datetime(*date)
         self.book_c.append(book_copy)
         self._count_limit += 1
         if book_copy in self.book_c:
-            book_copy.status = f"Взял студент с id = {self.stud_id}, дата взятия книги = {self._b_time.date()}"
+            book_copy.status = f"Took student with id = {self.stud_id}, book date = {self._b_time.date()}"
 
     def back_book(self, book_copy):
         if book_copy in self.book_c:
-            book_copy.status = "Доступен"
+            book_copy.status = "Available"
             self.book_c.remove(book_copy)
             self._count_limit -= 1
             if (datetime.today() - self._b_time).days > 14:
                 late = (datetime.today() - self._b_time).days
                 self._stud_stat = 0
-                return f"Студент опоздал с книгой на {late} дней, порядочность студента = 0"
-
-    def __str__(self):
-        return f"{self.name} {self.surname}, id = {self.stud_id}, {self.stud_stat}, {self._email}, " \
-               f"лимит книг = {self._count_limit}/{self._limit} Статус порядочности = {self.stud_stat}"
+                self._b_time = "None"
+                return f"The student was {late} days late with the book, the student's decency = 0"
 
     @property
     def name(self):
@@ -114,7 +88,7 @@ class Students:  # класс студент - может брать книгу,
 
     @property
     def limit(self):
-        return self._email
+        return self._limit
 
     @limit.setter
     def limit(self, limit):
@@ -135,33 +109,15 @@ class Students:  # класс студент - может брать книгу,
         self._stud_stat = stat
 
 
-class BookCopy:  # класс копии книг - создает копию нужной книги
-    doc = "Здесь указывается экземпляр книги и добавляются вручную с помощью append в self.Book.list_book(self)," \
-          "если студент не вернет книгу в срок, порядочность студента будет = 0 и нельзя будет брать больше книг"
-
-    def __init__(self, book, state: int, status="Доступен"):
-        self.book = book
-        self.book_title = Verify.verify_str(book.title)
-        self.copy_id = Verify.rand_id()
-        self.state = Verify.verify_int(state)
-        self.status = status
-
-    def __str__(self):
-        return f"{self.book_title}, Состояние книги = {self.state}, id = {self.copy_id}, {self.status}"
-
-
-class Book:  # класс Книги - создает книгу и хранит в себя копии этой книги
-
-    doc = "Здесь нужно указать саму книгу (название, авторов, год выпуска, ISBN, Жанр)"
-
-    def __init__(self, title: str, authors: tuple, year: int, isbn: str, genre: str):
-        self._id_book = Verify.rand_id()
-        self._title = Verify.verify_str(title)
-        self._authors = list(authors)
-        self._year = Verify.verify_isdigit(year)
-        self._ISBN = Verify.verify_str(isbn)
-        self.genre = Verify.verify_str(genre)
-        self.list_book = []
+@dataclass
+class Book:
+    _title: str
+    _authors: str
+    _year: int
+    _ISBN: str
+    genre: str
+    list_book: list = field(default_factory=list, repr=False)
+    _id_book: str = IdRandomMIx.rand_id()
 
     @property
     def id_book(self):
@@ -183,113 +139,109 @@ class Book:  # класс Книги - создает книгу и хранит
     def isbn(self):
         return self._ISBN
 
-    def __str__(self):
-        return f"{self.title}, {self.authors}, {self.year}, {self.isbn}, {self.genre}," \
-               f" Копии этой книги - {[[i] for i in self.list_book]}"
+
+@dataclass
+class BookCopy:
+    book: Book = field(repr=False)
+    state: int
+    title: str = ""
+    copy_id: str = IdRandomMIx.rand_id()
+    status: str = "Available"
+
+    def __post_init__(self):
+        self.title = self.book.title
 
 
-class Library:  # класс библиотека - хранит в себя книги, копию книг, студентов - можно сделать поиск в нужных списках
-    name_lib = "coollib"
+class Library:  # library class - stores books, installs books, students - you can search in the lists you need
+    name_lib = "Good Library"
     student_list = []
     books_list = []
     book_cop = []
 
     @staticmethod
-    def change_stud_limit(stud, limit):  # меняет лимит книг конкретного студента
+    def change_stud_limit(stud, limit):  # changes the limit of books for student
         stud.limit = limit
 
     @classmethod
-    def enter_studs(cls, *args):  # добавляет студентов в библиотеку
-        cls.student_list += list(args)
+    def enter_studs(cls, *args):  # adds students to the library
+        cls.student_list += list([i for i in args])
 
     @classmethod
-    def enter_book(cls, *args):  # добавляет книг в библиотеку
-        cls.books_list += list(args)
+    def enter_book(cls, *args):  # adds books to the library
+        cls.books_list += list([i for i in args])
 
     @classmethod
-    def enter_book_copy(cls, *args):  # добавляет копию книг в библиотеку
+    def enter_book_copy(cls, *args):  # adds copybooks to the library
         cls.book_cop += list([i for i in args])
 
-    @classmethod  # поиск в книге, можно указать все аргументы или некоторые
-    def search_stud(cls, name="", surname="", email=""):
-        search_stud_set = set()
-        for i in range(len(cls.student_list)):
-            if name in cls.student_list[i].name and surname in cls.student_list[i].surname and \
-                    email in cls.student_list[i].email:
-                ind = f"Index = {i}, {cls.student_list[i]}"
-                search_stud_set.add(ind)
-        if len(search_stud_set) == 0:
-            search_stud_set.add("Ошибка в поиске")
-        print(*search_stud_set, sep="\n")
+    @classmethod
+    def search_book(cls, word):  # search for the required word in the list of books and returns the found ones
+        for_search = []
+        for i in cls.books_list:
+            if word in str(i):
+                for_search.append(i)
+        print(*for_search, sep="\n")
 
-    @classmethod  # поиск в книге, можно указать все аргументы или некоторые
-    def search_book(cls, title="", authors="", isbn="", genre=""):
-        search_book_set = set()
-        for i in range(len(cls.books_list)):
-            if title in cls.books_list[i].title and authors in cls.books_list[i].authors \
-                    and isbn in cls.books_list[i].isbn and\
-                    genre in cls.books_list[i].genre:
-                ind = f"Index = {i}, {cls.books_list[i]}"
-                search_book_set.add(ind)
-        if len(search_book_set) == 0:
-            search_book_set.add("Ошибка в поиске")
-            print(*search_book_set, sep="\n")
+    @classmethod
+    def search_copy_book(cls, word):  # search for the required word in the list of copybooks and returns the found ones
+        for_search = []
+        for i in cls.book_cop:
+            if word in str(i):
+                for_search.append(i)
+        print(*for_search, sep="\n")
 
-    @classmethod  # поиск в книге, можно указать все аргументы или некоторые
-    def search_book_copy(cls, book_title="", status=""):
-        search_book_copy_set = set()
-        for i in range(len(cls.book_cop)):
-            if book_title in cls.book_cop[i].book_title and status in cls.book_cop[i].status.split():
-                ind = f"Index = {i}, {cls.book_cop[i]}"
-                search_book_copy_set.add(ind)
-        if len(search_book_copy_set) == 0:
-            search_book_copy_set.add("Ошибка в поиске")
-        print(*search_book_copy_set, sep="\n")
+    @classmethod
+    def search_student(cls, word):  # search for the required word in the list of students and returns the found ones
+        for_search = []
+        for i in cls.student_list:
+            if word in str(i):
+                for_search.append(i)
+        print(*for_search, sep="\n")
+
+    @classmethod
+    def find_all_free_books_copy(cls):  # shows all available book copies
+        for_search = []
+        for i in cls.book_cop:
+            if "Available" in str(i):
+                for_search.append(i)
+        print(*for_search, sep="\n")
 
 
-#  создаем книг
-book1 = Book("Python К вершинам мастерства", ("Лучано Рамальо",), 2015, "978-5-97060-384-0", "Обучение")
-book2 = Book("Python Чистый код для продолжающих", ("Эл Свейгарт",), 2021, "978-5-4461-1852-6", "Обучение")
+book1 = Book("Fluent Python: Clear, Concise", "Luciano Ramalho", 2015, "978-0-1323-5088-4", "Education")
+book2 = Book("Clean Code: A Handbook of Agile Software Craftsmanship", " Martin Robert", 2008,
+             "978-5-4461-1852-6", "Education")
 
-#  создаем студентов
+
+# создаем студентов
 stud1 = Students("Vram", "Torosyan", "vram_torosyan@mail.ru")
 stud2 = Students("Gegham", "Petrosyan", "Gegham_petrosyan@gmail.com")
 
-#  тут поменял у студента 1 лимит на 4
 Library.change_stud_limit(stud1, 4)
 
-#  тут создаем копию книг и добавляем и сразу добавляем их в список книги по копии
-#  мог сделать так, чтобы сразу добавился в список Библиотеки, но не стал
+# here we add a copy of the books to the list
+
 book1.list_book.append(book1_ekz1 := BookCopy(book1, 6))
 book1.list_book.append(book1_ekz2 := BookCopy(book1, 4))
 book2.list_book.append(book2_ekz1 := BookCopy(book2, 9))
 book2.list_book.append(book2_ekz2 := BookCopy(book2, 7))
 
-#  показывает что студент взял книгу и дату и id студента
-stud1.take_book(book1_ekz1, (2023, 4, 25))
 
-#  stud1.back_book(book1_ekz1) так можно вернуть книгу
-#  если вернуть книгу позже чем 14 дней то порядочность студента станет = 0 и студент не сможет больше взять книг
-print(stud1)
-print(book1)
-print(book1_ekz1)
+stud2.take_book(book2_ekz1, (2000, 4, 23))  # student takes a book
 
-print()
 
-#  добавляем в список Библиотеки
+#  stud1.back_book(book1_ekz1) the student returned the book
+
+# if you return the book later than 14 days, then the student's decency will become = 0
+# and the student will not be able to take more books
+
+
+#  added to the Library of Books, Students and copy Books list
 Library.enter_book(book1, book2)
 Library.enter_studs(stud1, stud2)
 Library.enter_book_copy(book1_ekz1, book1_ekz2, book2_ekz1, book2_ekz2)
 
-# показывает все доступные книги
-Library.search_book_copy(book_title="Python К вершинам мастерства", status="2023-04-25")
-Library.search_book_copy(book_title="Hello World")  # покажет ошибку в поиске
-Library.search_stud(name="Gegham", surname="Petrosyan")
-
-
+Library.search_book("Python")
+Library.search_copy_book("6")
+Library.search_student("Vram")
 print()
-print(book1.authors)
-print()
-print(Library.books_list)
-print(Library.student_list)
-print(Library.book_cop)
+Library.find_all_free_books_copy()  # shows all available books
