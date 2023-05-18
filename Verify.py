@@ -1,19 +1,36 @@
+import uuid
+from string import ascii_letters
 
-class Verify:
-    @classmethod
-    def verify_str(cls, inst):
-        if not isinstance(inst, str):
-            raise TypeError("Type must be a string")
-        return inst
+
+class ValidName:
 
     @classmethod
-    def verify_int(cls, inst):
-        if not isinstance(inst, int):
-            raise TypeError("Type must be an integer between 0 and 10 inclusive")
-        return inst
+    def name_str_valid(cls, value):
+        val = list(filter(lambda x: x not in ascii_letters, value))
+        if len(val) > 0 or value != value.capitalize():
+            raise TypeError("First name or last name must start with a capital letter and have only letters")
+        return value
 
     @classmethod
-    def verify_isdigit(cls, inst):
-        if not str(inst).isdigit():
-            raise Exception("Can only be a digit as a string or an integer")
-        return inst
+    def __get_validators__(cls):
+        yield cls.name_str_valid
+
+
+class ValidUuid:
+
+    @classmethod
+    def uuid_str_valid(cls, value):
+        if not isinstance(value, uuid.UUID):
+            raise TypeError("Uuid must be of type uuid only")
+        return value
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.uuid_str_valid
+#
+
+
+
+
+
+
