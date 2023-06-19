@@ -1,19 +1,33 @@
 import uuid
+from string import ascii_letters
 from pydantic import BaseModel, Field, ValidationError, validator, conint, EmailStr
 from datetime import datetime
-from Verify import ValidName, ValidUuid
+
+
+class ValidName:
+
+    @classmethod
+    def name_str_valid(cls, value):
+        val = list(filter(lambda x: x not in ascii_letters, value))
+        if len(val) > 0 or value != value.capitalize():
+            raise TypeError("First name or last name must start with a capital letter and have only letters")
+        return value
+
+    @classmethod
+    def __get_validators__(cls):
+        yield cls.name_str_valid
 
 
 class Students(BaseModel):
     name: ValidName
     surname: ValidName
     email: EmailStr
-    stud_id: ValidUuid = uuid.uuid4()
+    stud_id: uuid.UUID = uuid.uuid4()
     book_c: list = Field(default_factory=list, repr=False)
     stud_stat: int = 10
     count_limit: int = 0
     limit: int = 5
-    b_time: str | datetime = None
+    b_time: None | datetime = None
 
     def take_book(self, book_copy, date):
         if len(self.book_c) == self.limit:
@@ -41,7 +55,7 @@ class Students(BaseModel):
             if (datetime.today() - self.b_time).days > 14:
                 late = (datetime.today() - self.b_time).days
                 self.stud_stat = 0
-                self.b_time = "None"
+                self.b_time = None
                 return f"The student was {late} days late with the book, the student's decency = 0"
 
     class Config:
@@ -55,14 +69,14 @@ class Book(BaseModel):
     ISBN: str
     genre: str
     list_book: list = Field(default_factory=list, repr=False)
-    id_book: ValidUuid = uuid.uuid4()
+    id_book: uuid.UUID = uuid.uuid4()
 
 
 class BookCopy(BaseModel):
     book: Book = Field(repr=False)
     state: int
     title: str = ""
-    copy_id: ValidUuid = uuid.uuid4()
+    copy_id: uuid.UUID = uuid.uuid4()
     status: str = "Available"
 
     def _init_private_attributes(self, *args, **kwargs):
@@ -124,7 +138,8 @@ class Library:  # library class - stores books, installs books, students - you c
         print(*for_search, sep="\n")
 
 
-book1 = Book(title="Fluent Python: Clear, Concise", authors="Luciano Ramalho", year=2015, ISBN="978-0-1323-5088-4", genre="Education")
+book1 = Book(title="Fluent Python: Clear, Concise", authors="Luciano Ramalho",
+             year=2015, ISBN="978-0-1323-5088-4", genre="Education")
 book2 = Book(title="Clean Code: A Handbook of Agile Software Craftsmanship", authors=" Martin Robert", year=2008,
              ISBN="978-5-4461-1852-6", genre="Education")
 
@@ -161,7 +176,3 @@ Library.search_copy_book("state=6")
 Library.search_student("Vram")
 print()
 Library.find_all_free_books_copy()  # shows all available books
-
-
-
-
